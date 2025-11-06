@@ -1,9 +1,10 @@
 #ifndef HASH_SET_SEQUENTIAL_H
 #define HASH_SET_SEQUENTIAL_H
 
+#include <algorithm>
 #include <cassert>
-#include <vector>
 #include <functional>
+#include <vector>
 
 #include "src/hash_set_base.h"
 
@@ -20,8 +21,8 @@ template <typename T>
 class HashSetSequential : public HashSetBase<T> {
  public:
   explicit HashSetSequential(size_t initial_capacity)
-    : table_(initial_capacity), size_(0) {
-      assert(initial_capacity > 0 && "Initial capacity must be > 0");
+      : table_(initial_capacity), size_(0) {
+    assert(initial_capacity > 0 && "Initial capacity must be > 0");
   }
 
   // --------------------------------------------------------------------------
