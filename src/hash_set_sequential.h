@@ -107,9 +107,9 @@ class HashSetSequential : public HashSetBase<T> {
     table_.swap(new_table);
   }
 
-  std::vector<std::vector<T>> table_;
-  size_t size_;
-
+ private:
+  std::vector<std::vector<T>> table_;  // hash table
+  size_t size_;                        // total elements
   static constexpr size_t kLoadFactorThreshold = 4;
 };
 
