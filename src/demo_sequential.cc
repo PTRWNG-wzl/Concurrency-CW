@@ -3,6 +3,7 @@
 #include "src/hash_set_sequential.h"
 
 int main(int argc, char** argv) {
+  // Expect exactly two numeric arguments: initial capacity and insert count.
   if (argc != 3) {
     std::cerr << "Usage: " << argv[0] << " initial_capacity count" << std::endl;
     return 1;
@@ -12,14 +13,17 @@ int main(int argc, char** argv) {
 
   HashSetSequential<int> sequential_set(initial_capacity);
 
+  // Insert incremental integers [0, count) and confirm insertion succeeds.
   for (size_t i = 0; i < count; i++) {
     sequential_set.Add(static_cast<int>(i));
   }
+  // The set should now contain exactly `count` unique elements.
   if (sequential_set.Size() != count) {
     std::cerr << "Expected size " << count << ", got " << sequential_set.Size()
               << std::endl;
     return 1;
   }
+  // Walk through the same range, verifying membership and removing each value.
   for (size_t i = 0; i < count; i++) {
     if (sequential_set.Size() != count - i) {
       std::cerr << "Expected size " << (count - i) << ", got "
@@ -32,6 +36,7 @@ int main(int argc, char** argv) {
     }
     sequential_set.Remove(expected_value);
   }
+  // After removing every element the set should be empty.
   if (sequential_set.Size() != 0) {
     std::cerr << "Expected empty set, got set with size "
               << sequential_set.Size() << std::endl;
