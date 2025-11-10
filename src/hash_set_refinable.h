@@ -7,6 +7,7 @@
 #include <functional>
 #include <memory>
 #include <mutex>
+#include <shared_mutex>
 #include <vector>
 
 #include "src/hash_set_base.h"
@@ -24,7 +25,7 @@ class HashSetRefinable : public HashSetBase<T> {
     while (true) {
       auto state = std::atomic_load(&state_);
       const size_t index = BucketIndex(elem, *state);
-      std::unique_lock<std::mutex> bucket_lock(state->locks[index]);
+      std::unique_lock<std::shared_mutex> bucket_lock(state->locks[index]);
       if (state != std::atomic_load(&state_)) {
         continue;
       }
@@ -53,7 +54,7 @@ class HashSetRefinable : public HashSetBase<T> {
     while (true) {
       auto state = std::atomic_load(&state_);
       const size_t index = BucketIndex(elem, *state);
-      std::unique_lock<std::mutex> bucket_lock(state->locks[index]);
+      std::unique_lock<std::shared_mutex> bucket_lock(state->locks[index]);
       if (state != std::atomic_load(&state_)) {
         continue;
       }
@@ -75,7 +76,7 @@ class HashSetRefinable : public HashSetBase<T> {
     while (true) {
       auto state = std::atomic_load(&state_);
       const size_t index = BucketIndex(elem, *state);
-      std::unique_lock<std::mutex> bucket_lock(state->locks[index]);
+      std::shared_lock<std::shared_mutex> bucket_lock(state->locks[index]);
       if (state != std::atomic_load(&state_)) {
         continue;
       }
@@ -94,7 +95,7 @@ class HashSetRefinable : public HashSetBase<T> {
     explicit TableState(size_t capacity) : buckets(capacity), locks(capacity) {}
 
     std::vector<std::vector<T>> buckets;
-    std::vector<std::mutex> locks;
+    std::vector<std::shared_mutex> locks;
   };
 
   static size_t BucketIndex(const T& elem, const TableState& state) {
@@ -122,10 +123,10 @@ class HashSetRefinable : public HashSetBase<T> {
       return;
     }
 
-    std::vector<std::unique_lock<std::mutex>> locked_buckets;
-    locked_buckets.reserve(current_state->locks.size());
+    std::vector<std::unique_lock<std::shared_mutex>> bucket_guards;
+    bucket_guards.reserve(current_state->locks.size());
     for (auto& lock : current_state->locks) {
-      locked_buckets.emplace_back(lock);
+      bucket_guards.emplace_back(lock);
     }
 
     const size_t new_capacity = current_state->buckets.size() * 4;
