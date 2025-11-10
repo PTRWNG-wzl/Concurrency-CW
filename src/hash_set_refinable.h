@@ -35,10 +35,10 @@ class HashSetRefinable : public HashSetBase<T> {
       }
 
       bucket.push_back(elem);
-      size_.fetch_add(1, std::memory_order_relaxed);
+      const size_t new_size = size_.fetch_add(1, std::memory_order_relaxed) + 1;
 
-      const bool should_resize = size_.load(std::memory_order_relaxed) >
-                                 kLoadFactorThreshold * state->buckets.size();
+      const bool should_resize =
+          new_size > kLoadFactorThreshold * state->buckets.size();
 
       bucket_lock.unlock();
       if (should_resize) {
@@ -107,7 +107,10 @@ class HashSetRefinable : public HashSetBase<T> {
       return;
     }
 
-    std::lock_guard<std::mutex> resize_guard(resize_mutex_);
+    std::unique_lock<std::mutex> resize_guard(resize_mutex_, std::try_to_lock);
+    if (!resize_guard.owns_lock()) {
+      return;
+    }
 
     auto current_state = std::atomic_load(&state_);
     if (current_state != expected_state) {
@@ -125,7 +128,7 @@ class HashSetRefinable : public HashSetBase<T> {
       locked_buckets.emplace_back(lock);
     }
 
-    const size_t new_capacity = current_state->buckets.size() * 2;
+    const size_t new_capacity = current_state->buckets.size() * 4;
     auto new_state = std::make_shared<TableState>(new_capacity);
     for (const auto& bucket : current_state->buckets) {
       for (const auto& elem : bucket) {
